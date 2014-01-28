@@ -115,13 +115,13 @@ def running(name,
             process_groups.append(proc[:proc.index(':') + 1])
     process_groups = list(set(process_groups))
 
-    # determine if this process/group needs loading
-    needs_update = name not in all_processes and name not in process_groups
+    # determine if this process/group needs to be added
+    needs_adding = name not in all_processes and name not in process_groups
 
     if __opts__['test']:
         ret['result'] = None
         _msg = 'restarted' if restart else 'started'
-        _update = ', but service needs to be added' if needs_update else ''
+        _update = ', but service needs to be added' if needs_adding else ''
         ret['comment'] = (
             'Service {0} is set to be {1}{2}'.format(
                 name, _msg, _update))
@@ -129,7 +129,7 @@ def running(name,
 
     changes = []
     just_updated = False
-    if needs_update:
+    if needs_adding:
         comment = 'Adding service: {0}'.format(name)
         __salt__['supervisord.reread'](
             user=user,
@@ -146,6 +146,11 @@ def running(name,
         ret.update(_check_error(result, comment))
         changes.append(comment)
         log.debug(comment)
+
+        # Adding a service starts it, so need to update or start it
+        if ret['result'] and len(changes):
+            ret['changes'][name] = ' '.join(changes)
+        return ret
 
     elif update:
         comment = 'Updating supervisor'
