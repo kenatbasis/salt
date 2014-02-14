@@ -162,7 +162,6 @@ def reap_fileserver_cache_dir(cache_base, find_func):
                 if ret['path'] == '':
                     os.unlink(file_path)
 
-
 def is_file_ignored(opts, fname):
     '''
     If file_ignore_regex or file_ignore_glob were given in config,
@@ -189,7 +188,6 @@ def is_file_ignored(opts, fname):
                 )
                 return True
     return False
-
 
 class Fileserver(object):
     '''
@@ -458,8 +456,21 @@ class Fileserver(object):
             ret = [f for f in ret if f.startswith(prefix)]
         return ret
 
+def singleton_class_function_export(cls, opts):
+    def wrapper(func):
+        def instantiate_singleton(*args, **kwargs):
+            instance = cls(opts)
+            getattr(instance, func)(*args, **kwargs)
+        return instantiate_singleton
+        
+    exportable_funcs = [d for d in dir(cls) if not (d.startswith('__') and
+        callable(getattr(cls, d)))]
+    exported_funcs = [wrapper(func) for func in exportable_funcs]
+    return exported_funcs
+
 class FileserverBackend(object):
     __metaclass__ = ABCMeta
+    serves = ''
 
     # this singleton is only needed because of how the loader only loads
     # functions, and also how __opts__ is a global variable, but only in 
@@ -474,8 +485,7 @@ class FileserverBackend(object):
                     cls, *args, **kwargs)
         return cls._instance
 
-    def __init__(self, opts, serves):
-        self.serves = serves
+    def __init__(self, opts):
         self.opts = opts
 
     @abstractmethod
