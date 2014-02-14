@@ -10,6 +10,7 @@ import fnmatch
 import logging
 import time
 import errno
+from abc import ABCMeta, abstractmethod
 
 # Import salt libs
 import salt.loader
@@ -456,3 +457,63 @@ class Fileserver(object):
         if prefix != '':
             ret = [f for f in ret if f.startswith(prefix)]
         return ret
+
+class FileserverBackend(object):
+    __metaclass__ = ABCMeta
+
+    # this singleton is only needed because of how the loader only loads
+    # functions, and also how __opts__ is a global variable, but only in 
+    # loaded modules and not their imported modules
+
+    # therefore, all the function calls to fileserver backends will call the
+    # singleton, and then the function they're supposed to call
+    # pretty much, this can be deleted when loader handles objects properly
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(FileserverBackend, cls).__new__(
+                    cls, *args, **kwargs)
+        return cls._instance
+
+    def __init__(self, opts, serves):
+        self.serves = serves
+        self.opts = opts
+
+    @abstractmethod
+    def init(self):
+        pass
+
+    @abstractmethod
+    def update(self):
+        pass
+
+    @abstractmethod
+    def envs(self):
+        pass
+
+    @abstractmethod
+    def find_file(self, path, saltenv, **kwargs):
+        pass
+
+    @abstractmethod
+    def serve_file(self, load, fnd):
+        pass
+
+    @abstractmethod
+    def file_hash(self, load, fnd):
+        pass
+
+    @abstractmethod
+    def file_list(self, load):
+        pass
+
+    @abstractmethod
+    def file_list_emptydirs(self, load):
+        pass
+
+    @abstractmethod
+    def dir_list(self, load):
+        pass
+
+    @abstractmethod
+    def sym_link(self, load):
+        pass
