@@ -196,9 +196,14 @@ class Fileserver(object):
     iterates over them to execute the desired function within the scope of the
     desired fileserver backend.
     '''
-    def __init__(self, opts):
+    def __init__(self, opts, serves):
         self.opts = opts
-        self.servers = salt.loader.fileserver(opts, opts['fileserver_backend'])
+        if serves == 'pillar':
+            self.serves_key = 'pillar_fileserver_backend'
+            self.servers = salt.loader.pillar_fileserver(opts, opts[self.serves_key])
+        else:
+            self.serves_key = 'states_fileserver_backend'
+            self.servers = salt.loader.states_fileserver(opts, opts[self.serves_key])
 
     def _gen_back(self, back):
         '''
@@ -206,7 +211,7 @@ class Fileserver(object):
         '''
         ret = []
         if not back:
-            back = self.opts['fileserver_backend']
+            back = self.opts[self.serves_key]
         if isinstance(back, str):
             back = [back]
         for sub in back:
