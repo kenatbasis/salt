@@ -197,11 +197,19 @@ def auth(opts, whitelist=None):
     return load.gen_functions(whitelist=whitelist)
 
 
-def fileserver(opts, backends):
+def states_fileserver(opts, backends):
     '''
     Returns the file server modules
     '''
-    load = _create_loader(opts, 'fileserver', 'fileserver')
+    load = _create_loader(opts, 'states_fileserver', 'states_fileserver')
+    ret = load.gen_functions(whitelist=backends)
+    return ret
+
+def pillar_fileserver(opts, backends):
+    '''
+    Returns the file server modules
+    '''
+    load = _create_loader(opts, 'pillar_fileserver', 'pillar_fileserver')
     ret = load.gen_functions(whitelist=backends)
     return ret
 
