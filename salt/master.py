@@ -43,7 +43,8 @@ import salt.wheel
 import salt.minion
 import salt.search
 import salt.key
-import salt.fileserver
+import salt.states_fileserver
+import salt.pillar_fileserver
 import salt.daemons.masterapi
 import salt.utils.atomicfile
 import salt.utils.event
@@ -153,7 +154,8 @@ class Master(SMaster):
         search = salt.search.Search(self.opts)
         last = int(time.time())
         rotate = int(time.time())
-        fileserver = salt.fileserver.Fileserver(self.opts)
+        states_fileserver = salt.states_fileserver.StatesFileserver(self.opts)
+        pillar_fileserver = salt.pillar_fileserver.PillarFileserver(self.opts)
         runners = salt.loader.runner(self.opts)
         schedule = salt.utils.schedule.Schedule(self.opts, runners)
         ckminions = salt.utils.minions.CkMinions(self.opts)
@@ -179,7 +181,8 @@ class Master(SMaster):
             if self.opts.get('search'):
                 if now - last >= self.opts['search_index_interval']:
                     search.index()
-            salt.daemons.masterapi.fileserver_update(fileserver)
+            salt.daemons.masterapi.fileserver_update(states_fileserver)
+            salt.daemons.masterapi.fileserver_update(pillar_fileserver)
 
             # check how close to FD limits you are
             salt.utils.verify.check_max_open_files(self.opts)
@@ -271,14 +274,22 @@ class Master(SMaster):
         should not start up
         '''
         errors = []
-        fileserver = salt.fileserver.Fileserver(self.opts)
-        if not fileserver.servers:
+        states_fileserver = salt.states_fileserver.StatesFileserver(self.opts)
+        pillar_fileserver = salt.pillar_fileserver.PillarFileserver(self.opts)
+        if not states_fileserver.servers:
             errors.append(
-                'Failed to load fileserver backends, the configured backends '
-                'are: {0}'.format(', '.join(self.opts['fileserver_backend']))
+                'Failed to load states fileserver backends, the configured backends '
+                'are: {0}'.format(', '.join(self.opts['states_fileserver_backend']))
             )
-        if not self.opts['fileserver_backend']:
-            errors.append('No fileserver backends are configured')
+        if not pillar_fileserver.servers:
+            errors.append(
+                'Failed to load pillar fileserver backends, the configured backends '
+                'are: {0}'.format(', '.join(self.opts['pillar_fileserver_backend']))
+            )
+        if not self.opts['states_fileserver_backend']:
+            errors.append('No states fileserver backends are configured')
+        if not self.opts['pillar_fileserver_backend']:
+            errors.append('No pillar fileserver backends are configured')
         if errors:
             for error in errors:
                 log.error(error)
@@ -703,20 +714,22 @@ class AESFuncs(object):
                 self.opts,
                 states=False,
                 rend=False)
-        self.__setup_fileserver()
+        self.__setup_fileservers()
 
-    def __setup_fileserver(self):
+    def __setup_fileservers(self):
         '''
         Set the local file objects from the file server interface
         '''
-        fs_ = salt.fileserver.Fileserver(self.opts)
-        self._serve_file = fs_.serve_file
-        self._file_hash = fs_.file_hash
-        self._file_list = fs_.file_list
-        self._file_list_emptydirs = fs_.file_list_emptydirs
-        self._dir_list = fs_.dir_list
-        self._symlink_list = fs_.symlink_list
-        self._file_envs = fs_.envs
+        self.states_fileserver = salt.states_fileserver.StatesFileserver(self.opts)
+        self.pillar_fileserver = salt.pillar_fileserver.PillarFileserver(self.opts)
+        # backwards compatibility with old minions
+        self._serve_file = self.states_fileserver.serve_file
+        self._file_hash = self.states_fileserver.file_hash
+        self._file_list = self.states_fileserver.file_list
+        self._file_list_emptydirs = self.states_fileserver.file_list_emptydirs
+        self._dir_list = self.states_fileserver.dir_list
+        self._symlink_list = self.states_fileserver.symlink_list
+        self._file_envs = self.states_fileserver.envs
 
     def __verify_minion(self, id_, token):
         '''
