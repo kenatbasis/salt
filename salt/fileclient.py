@@ -914,7 +914,7 @@ class RemoteClient(Client):
         path = self._check_proto(path)
         load = {'path': path,
                 'saltenv': saltenv,
-                'cmd': '_serve_file'}
+                'cmd': 'states_fileserver.serve_file'}
         if gzip:
             gzip = int(gzip)
             load['gzip'] = gzip
@@ -1025,7 +1025,7 @@ class RemoteClient(Client):
 
         load = {'saltenv': saltenv,
                 'prefix': prefix,
-                'cmd': '_file_list_emptydirs'}
+                'cmd': 'states_fileserver.file_list_emptydirs'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1050,7 +1050,7 @@ class RemoteClient(Client):
 
         load = {'saltenv': saltenv,
                 'prefix': prefix,
-                'cmd': '_dir_list'}
+                'cmd': 'states_fileserver.dir_list'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1065,7 +1065,7 @@ class RemoteClient(Client):
         '''
         load = {'saltenv': saltenv,
                 'prefix': prefix,
-                'cmd': '_symlink_list'}
+                'cmd': 'states_fileserver.symlink_list'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1105,7 +1105,7 @@ class RemoteClient(Client):
                 return ret
         load = {'path': path,
                 'saltenv': saltenv,
-                'cmd': '_file_hash'}
+                'cmd': 'states_fileserver.file_hash'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1129,7 +1129,7 @@ class RemoteClient(Client):
             saltenv = env
 
         load = {'saltenv': saltenv,
-                'cmd': '_file_list'}
+                'cmd': 'state_fileserver.file_list'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
