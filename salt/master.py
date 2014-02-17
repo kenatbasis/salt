@@ -24,6 +24,7 @@ import resource
 import subprocess
 import multiprocessing
 import sys
+import operator
 
 # Import third party libs
 import zmq
@@ -1576,22 +1577,10 @@ class AESFuncs(object):
         if func.startswith('__'):
             return self.crypticle.dumps({})
         # Run the func
-        if hasattr(self, func):
-            try:
-                start = time.time()
-                ret = getattr(self, func)(load)
-                log.trace(
-                        'Master function call {0} took {1} seconds'.format(
-                            func, time.time() - start
-                            )
-                        )
-            except Exception:
-                ret = ''
-                log.error(
-                    'Error in function {0}:\n'.format(func),
-                    exc_info=True
-                )
-        else:
+        f = operator.attrgetter(func)
+        try:
+            bound_func = f(self)
+        except AttributeError as e:
             log.error(
                 'Received function {0} which is unavailable on the master, '
                 'returning False'.format(
@@ -1599,6 +1588,23 @@ class AESFuncs(object):
                 )
             )
             return self.crypticle.dumps(False)
+
+        try:
+            start = time.time()
+            ret = bound_func(load)
+            log.trace(
+                    'Master function call {0} took {1} seconds'.format(
+                        func, time.time() - start
+                        )
+                    )
+        except Exception as e:
+            ret = ''
+            log.error(
+                'Error in function {0}:\n'.format(func),
+                exc_info=True
+            )
+            # why don't we log the actual error?
+
         # Don't encrypt the return value for the _return func
         # (we don't care about the return value, so why encrypt it?)
         if func == '_return':
