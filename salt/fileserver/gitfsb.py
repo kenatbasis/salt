@@ -965,7 +965,7 @@ class GitFSB(salt.fileserver.FileserverBackend):
         provider = _get_provider(self.opts)
         pid = os.getpid()
         data['changed'] = self._purge_cache()
-        repos = init()
+        repos = self.init()
         for repo in repos:
             if provider == 'gitpython':
                 origin = repo.remotes[0]
@@ -1112,7 +1112,7 @@ class GitFSB(salt.fileserver.FileserverBackend):
             os.makedirs(destdir)
         if not os.path.isdir(hashdir):
             os.makedirs(hashdir)
-        repos = init()
+        repos = self.init()
         if 'index' in kwargs:
             try:
                 repos = [repos[int(kwargs['index'])]]
@@ -1340,7 +1340,7 @@ class GitFSB(salt.fileserver.FileserverBackend):
             return []
         if load['saltenv'] == 'base':
             load['saltenv'] = base_branch
-        repos = init()
+        repos = self.init()
         ret = set()
         for repo in repos:
             if provider == 'gitpython':
