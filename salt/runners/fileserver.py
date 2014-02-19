@@ -4,7 +4,8 @@ Directly manage the salt fileserver plugins
 '''
 
 # Import salt libs
-import salt.fileserver
+import salt.states_fileserver
+import salt.pillar_fileserver
 
 
 def update():
@@ -17,5 +18,9 @@ def update():
 
         salt-run fileserver.update
     '''
-    fileserver = salt.fileserver.Fileserver(__opts__)
-    fileserver.update()
+    fileservers = [
+            salt.states_fileserver.StatesFileserver(__opts__),
+            salt.pillar_fileserver.PillarFileserver(__opts__),
+            ]
+    for fileserver in fileservers:
+        fileserver.update()
