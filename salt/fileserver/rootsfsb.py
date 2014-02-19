@@ -32,7 +32,7 @@ class RootsFSB(salt.fileserver.FileserverBackend):
         self.roots_dir = {
                 'states': 'file_roots',
                 'pillar': 'pillar_roots'
-                }.get(self.__class__.serves, self.roots_dir)
+                }.get(self.__class__.serves, 'file_roots')
 
     def init(self):
         pass
