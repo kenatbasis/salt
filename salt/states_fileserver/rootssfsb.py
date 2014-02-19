@@ -8,6 +8,6 @@ def __virtual__():
 class RootsSFSB(salt.fileserver.rootsfsb.RootsFSB):
     serves = 'states'
 
-def __init__():
+def __init__(opts):
     global __load__
-    __load__ = salt.fileserver.singleton_class_function_export(RootsSFSB, __opts__)
+    __load__ = salt.fileserver.singleton_class_function_export(RootsSFSB, opts)

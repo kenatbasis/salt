@@ -8,7 +8,7 @@ def __virtual__():
 class RootsPFSB(salt.fileserver.rootsfsb.RootsFSB):
     serves = 'pillar'
 
-def __init__():
+def __init__(opts):
     global __load__
-    __load__ = salt.fileserver.singleton_class_function_export(RootsPFSB, __opts__)
+    __load__ = salt.fileserver.singleton_class_function_export(RootsPFSB, opts)
 
