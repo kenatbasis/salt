@@ -465,7 +465,7 @@ def singleton_class_function_export(cls, opts):
         
     exportable_funcs = [d for d in dir(cls) if not (d.startswith('__') and
         callable(getattr(cls, d)))]
-    exported_funcs = [wrapper(func) for func in exportable_funcs]
+    exported_funcs = {func:wrapper(func) for func in exportable_funcs}
     return exported_funcs
 
 class FileserverBackend(object):

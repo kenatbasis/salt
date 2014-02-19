@@ -9,5 +9,4 @@ class RootsSFSB(salt.fileserver.rootsfsb.RootsFSB):
     serves = 'states'
 
 def __init__(opts):
-    global __load__
-    __load__ = salt.fileserver.singleton_class_function_export(RootsSFSB, opts)
+    globals().update(salt.fileserver.singleton_class_function_export(RootsSFSB, opts))
