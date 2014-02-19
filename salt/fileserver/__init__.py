@@ -460,7 +460,7 @@ def singleton_class_function_export(cls, opts):
     def wrapper(func):
         def instantiate_singleton(*args, **kwargs):
             instance = cls(opts)
-            getattr(instance, func)(*args, **kwargs)
+            return getattr(instance, func)(*args, **kwargs)
         return instantiate_singleton
         
     exportable_funcs = [d for d in dir(cls) if not (d.startswith('__') and
