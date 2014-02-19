@@ -1302,9 +1302,9 @@ class GitFSB(salt.fileserver.FileserverBackend):
             return cache_match
         if refresh_cache:
             ret = {}
-            ret['files'] = _get_file_list(load)
-            ret['dirs'] = _get_dir_list(load)
-            ret['empty_dirs'] = _get_file_list_emptydirs(load)
+            ret['files'] = self._get_file_list(load)
+            ret['dirs'] = self._get_dir_list(load)
+            ret['empty_dirs'] = self._get_file_list_emptydirs(load)
             if save_cache:
                 salt.fileserver.write_file_list_cache(
                     self.opts, ret, list_cache, w_lock
