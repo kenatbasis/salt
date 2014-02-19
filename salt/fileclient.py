@@ -31,16 +31,25 @@ from salt._compat import (
 log = logging.getLogger(__name__)
 
 
-def get_file_client(opts):
+def get_file_client(opts, serves='states'):
     '''
     Read in the ``file_client`` option and return the correct type of file
     server
     '''
-    return {
-        'remote': RemoteClient,
-        'local': LocalClient
-    }.get(opts['file_client'], RemoteClient)(opts)
-
+    location = opts.get('file_client', 'remote')
+    clients = {
+                'local':
+                    {
+                        'states': StatesLocalClient,
+                        'pillar': PillarLocalClient,
+                    },
+                'remote':
+                    {
+                        'states': StatesRemoteClient,
+                        'pillar': PillarRemoteClient,
+                    },
+               }
+    return clients[location][serves](opts)
 
 class Client(object):
     '''
@@ -854,6 +863,8 @@ class RemoteClient(Client):
     '''
     Interact with the salt master file server.
     '''
+    serves = ''
+
     def __init__(self, opts):
         Client.__init__(self, opts)
         channel = salt.transport.Channel.factory(self.opts)
@@ -914,7 +925,7 @@ class RemoteClient(Client):
         path = self._check_proto(path)
         load = {'path': path,
                 'saltenv': saltenv,
-                'cmd': 'states_fileserver.serve_file'}
+                'cmd': self.__class__.serves + '_fileserver.serve_file'}
         if gzip:
             gzip = int(gzip)
             load['gzip'] = gzip
@@ -1000,7 +1011,7 @@ class RemoteClient(Client):
 
         load = {'saltenv': saltenv,
                 'prefix': prefix,
-                'cmd': '_file_list'}
+                'cmd': self.__class__.serves + '_fileserver.file_list'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1025,7 +1036,7 @@ class RemoteClient(Client):
 
         load = {'saltenv': saltenv,
                 'prefix': prefix,
-                'cmd': 'states_fileserver.file_list_emptydirs'}
+                'cmd': self.__class__.serves + '_fileserver.file_list_emptydirs'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1050,7 +1061,7 @@ class RemoteClient(Client):
 
         load = {'saltenv': saltenv,
                 'prefix': prefix,
-                'cmd': 'states_fileserver.dir_list'}
+                'cmd': self.__class__.serves + '_fileserver.dir_list'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1065,7 +1076,7 @@ class RemoteClient(Client):
         '''
         load = {'saltenv': saltenv,
                 'prefix': prefix,
-                'cmd': 'states_fileserver.symlink_list'}
+                'cmd': self.__class__.serves + '_fileserver.symlink_list'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1105,7 +1116,7 @@ class RemoteClient(Client):
                 return ret
         load = {'path': path,
                 'saltenv': saltenv,
-                'cmd': 'states_fileserver.file_hash'}
+                'cmd': self.__class__.serves + '_fileserver.file_hash'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1129,7 +1140,7 @@ class RemoteClient(Client):
             saltenv = env
 
         load = {'saltenv': saltenv,
-                'cmd': 'state_fileserver.file_list'}
+                'cmd': self.__class__.serves + '_fileserver.file_list'}
         try:
             channel = salt.transport.Channel.factory(
                     self.opts,
@@ -1168,3 +1179,17 @@ class RemoteClient(Client):
             return channel.send(load)
         except SaltReqTimeoutError:
             return ''
+
+class StatesLocalClient(LocalClient):
+    pass
+
+class PillarLocalClient(LocalClient):
+    # TODO: proper opts handling such that Pillar doesn't need to do musical
+    # chairs with file_roots and actual_file_roots and pillar_roots
+    pass
+
+class StatesRemoteClient(RemoteClient):
+    serves = 'states'
+
+class PillarRemoteClient(RemoteClient):
+    serves = 'pillar'
