@@ -527,5 +527,5 @@ class FileserverBackend(object):
         pass
 
     @abstractmethod
-    def sym_link(self, load):
+    def symlink_list(self, load):
         pass
