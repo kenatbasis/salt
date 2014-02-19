@@ -199,10 +199,10 @@ class Fileserver(object):
         self.opts = opts
         if serves == 'pillar':
             self.serves_key = 'pillar_fileserver_backend'
-            self.servers = salt.loader.pillar_fileserver(opts, opts[self.serves_key])
+            self.fsbs = salt.loader.pillar_fileserver(opts, opts[self.serves_key])
         else:
             self.serves_key = 'states_fileserver_backend'
-            self.servers = salt.loader.states_fileserver(opts, opts[self.serves_key])
+            self.fsbs = salt.loader.states_fileserver(opts, opts[self.serves_key])
 
     def _gen_back(self, back):
         '''
@@ -214,7 +214,7 @@ class Fileserver(object):
         if isinstance(back, str):
             back = [back]
         for sub in back:
-            if '{0}.envs'.format(sub) in self.servers:
+            if '{0}.envs'.format(sub) in self.fsbs:
                 ret.append(sub)
         return ret
 
@@ -226,9 +226,9 @@ class Fileserver(object):
         back = self._gen_back(back)
         for fsb in back:
             fstr = '{0}.update'.format(fsb)
-            if fstr in self.servers:
+            if fstr in self.fsbs:
                 log.debug('Updating fileserver cache')
-                self.servers[fstr]()
+                self.fsbs[fstr]()
 
     def envs(self, back=None, sources=False):
         '''
@@ -241,9 +241,9 @@ class Fileserver(object):
         for fsb in back:
             fstr = '{0}.envs'.format(fsb)
             if sources:
-                ret[fsb] = self.servers[fstr]()
+                ret[fsb] = self.fsbs[fstr]()
             else:
-                ret.update(self.servers[fstr]())
+                ret.update(self.fsbs[fstr]())
         if sources:
             return ret
         return list(ret)
@@ -255,8 +255,8 @@ class Fileserver(object):
         back = self._gen_back(back)
         for fsb in back:
             fstr = '{0}.init'.format(fsb)
-            if fstr in self.servers:
-                self.servers[fstr]()
+            if fstr in self.fsbs:
+                self.fsbs[fstr]()
 
     def find_file(self, path, saltenv, back=None):
         '''
@@ -297,8 +297,8 @@ class Fileserver(object):
             saltenv = kwargs.pop('saltenv')
         for fsb in back:
             fstr = '{0}.find_file'.format(fsb)
-            if fstr in self.servers:
-                fnd = self.servers[fstr](path, saltenv, **kwargs)
+            if fstr in self.fsbs:
+                fnd = self.fsbs[fstr](path, saltenv, **kwargs)
                 if fnd.get('path'):
                     fnd['back'] = fsb
                     return fnd
@@ -325,8 +325,8 @@ class Fileserver(object):
         if not fnd.get('back'):
             return ret
         fstr = '{0}.serve_file'.format(fnd['back'])
-        if fstr in self.servers:
-            return self.servers[fstr](load, fnd)
+        if fstr in self.fsbs:
+            return self.fsbs[fstr](load, fnd)
         return ret
 
     def file_hash(self, load):
@@ -348,8 +348,8 @@ class Fileserver(object):
         if not fnd.get('back'):
             return ''
         fstr = '{0}.file_hash'.format(fnd['back'])
-        if fstr in self.servers:
-            return self.servers[fstr](load, fnd)
+        if fstr in self.fsbs:
+            return self.fsbs[fstr](load, fnd)
         return ''
 
     def file_list(self, load):
@@ -370,8 +370,8 @@ class Fileserver(object):
             return []
         for fsb in self._gen_back(None):
             fstr = '{0}.file_list'.format(fsb)
-            if fstr in self.servers:
-                ret.update(self.servers[fstr](load))
+            if fstr in self.fsbs:
+                ret.update(self.fsbs[fstr](load))
         # some *fs do not handle prefix. Ensure it is filtered
         prefix = load.get('prefix', '').strip('/')
         if prefix != '':
@@ -396,8 +396,8 @@ class Fileserver(object):
             return []
         for fsb in self._gen_back(None):
             fstr = '{0}.file_list_emptydirs'.format(fsb)
-            if fstr in self.servers:
-                ret.update(self.servers[fstr](load))
+            if fstr in self.fsbs:
+                ret.update(self.fsbs[fstr](load))
         # some *fs do not handle prefix. Ensure it is filtered
         prefix = load.get('prefix', '').strip('/')
         if prefix != '':
@@ -422,8 +422,8 @@ class Fileserver(object):
             return []
         for fsb in self._gen_back(None):
             fstr = '{0}.dir_list'.format(fsb)
-            if fstr in self.servers:
-                ret.update(self.servers[fstr](load))
+            if fstr in self.fsbs:
+                ret.update(self.fsbs[fstr](load))
         # some *fs do not handle prefix. Ensure it is filtered
         prefix = load.get('prefix', '').strip('/')
         if prefix != '':
@@ -448,8 +448,8 @@ class Fileserver(object):
             return {}
         for fsb in self._gen_back(None):
             symlstr = '{0}.symlink_list'.format(fsb)
-            if symlstr in self.servers:
-                ret = self.servers[symlstr](load)
+            if symlstr in self.fsbs:
+                ret = self.fsbs[symlstr](load)
         # some *fs do not handle prefix. Ensure it is filtered
         prefix = load.get('prefix', '').strip('/')
         if prefix != '':

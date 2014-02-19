@@ -277,12 +277,12 @@ class Master(SMaster):
         errors = []
         states_fileserver = salt.states_fileserver.StatesFileserver(self.opts)
         pillar_fileserver = salt.pillar_fileserver.PillarFileserver(self.opts)
-        if not states_fileserver.servers:
+        if not states_fileserver.fsbs:
             errors.append(
                 'Failed to load states fileserver backends, the configured backends '
                 'are: {0}'.format(', '.join(self.opts['states_fileserver_backend']))
             )
-        if not pillar_fileserver.servers:
+        if not pillar_fileserver.fsbs:
             errors.append(
                 'Failed to load pillar fileserver backends, the configured backends '
                 'are: {0}'.format(', '.join(self.opts['pillar_fileserver_backend']))
