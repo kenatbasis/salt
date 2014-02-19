@@ -559,7 +559,7 @@ def _file_list_emptydirs_gitpython(repo, tgt, gitfs_root):
         if not isinstance(blob, git.Tree):
             continue
         if not blob.blobs:
-            if __opts__['gitfs_root']:
+            if gitfs_root:
                 ret.add(os.path.relpath(blob.path, gitfs_root))
                 continue
             ret.add(blob.path)
@@ -1102,7 +1102,7 @@ class GitFSB(salt.fileserver.FileserverBackend):
                                    self.__class__.serves + '_gitfs/hash',
                                    short,
                                    '{0}.hash.blob_sha1'.format(path))
-        lk_fn = os.path.join(__opts__['cachedir'],
+        lk_fn = os.path.join(self.opts['cachedir'],
                              self.__class__.serves + '_gitfs/hash',
                              short,
                              '{0}.lk'.format(path))
