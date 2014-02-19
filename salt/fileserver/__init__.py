@@ -480,10 +480,12 @@ class FileserverBackend(object):
     # singleton, and then the function they're supposed to call
     # pretty much, this can be deleted when loader handles objects properly
     def __new__(cls, *args, **kwargs):
-        if not cls._instance:
+        try:
+            return cls._instance
+        except AttributeError:
             cls._instance = super(FileserverBackend, cls).__new__(
                     cls, *args, **kwargs)
-        return cls._instance
+            return cls._instance
 
     def __init__(self, opts):
         self.opts = opts
