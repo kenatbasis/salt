@@ -483,8 +483,7 @@ class FileserverBackend(object):
         try:
             return cls._instance
         except AttributeError:
-            cls._instance = super(FileserverBackend, cls).__new__(
-                    cls, *args, **kwargs)
+            cls._instance = object.__new__(cls)
             return cls._instance
 
     def __init__(self, opts):
