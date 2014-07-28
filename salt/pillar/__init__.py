@@ -88,13 +88,25 @@ class RemotePillar(object):
 class Pillar(object):
     '''
     Read over the pillar top files and render the pillar data
+    This should only be called on the master node
+    In fact, this class should probably be renamed LocalPillar
+
+    Requires a fileserver because Fileserver does not have a proper local client
+    and MasterMinion cannot masquerade as a true minion and use Fileserver's
+    remote client
+
+    Current backwards compatibility is if fileserver is not set, pillar uses
+    LocalClient which ignores pillar fileserver and uses pillar_roots directly
     '''
-    def __init__(self, opts, grains, id_, saltenv, ext=None, functions=None):
+
+    def __init__(self, opts, grains, id_, saltenv, ext=None, functions=None, fileserver=None):
         # Store the file_roots path so we can restore later. Issue 5449
         self.actual_file_roots = opts['file_roots']
-        # use the local file client
         self.opts = self.__gen_opts(opts, grains, id_, saltenv, ext)
-        self.client = salt.fileclient.get_file_client(self.opts)
+        if fileserver:
+            self.client = salt.fileclient.PillarLocalClient(self.opts, fileserver)
+        else:
+            self.client = salt.fileclient.LocalClient(self.opts)
 
         if opts.get('file_client', '') == 'local':
             opts['grains'] = grains

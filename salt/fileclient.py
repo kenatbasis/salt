@@ -31,10 +31,13 @@ from salt._compat import (
 log = logging.getLogger(__name__)
 
 
-def get_file_client(opts, serves='states'):
+def get_file_client(opts):
     '''
     Read in the ``file_client`` option and return the correct type of file
-    server
+    server, remote vs local
+
+    Should only be used by StatesFileClients:
+
     '''
     location = opts.get('file_client', 'remote')
     clients = {
@@ -50,6 +53,7 @@ def get_file_client(opts, serves='states'):
                     },
                }
     return clients[location][serves](opts)
+
 
 class Client(object):
     '''
@@ -886,114 +890,6 @@ class RemoteClient(Client):
         dest is omitted, then the downloaded file will be placed in the minion
         cache
         '''
-        if env is not None:
-            salt.utils.warn_until(
-                'Boron',
-                'Passing a salt environment should be done using \'saltenv\' '
-                'not \'env\'. This functionality will be removed in Salt '
-                'Boron.'
-            )
-            # Backwards compatibility
-            saltenv = env
-
-        #--  Hash compare local copy with master and skip download
-        #    if no diference found.
-        dest2check = dest
-        if not dest2check:
-            rel_path = self._check_proto(path)
-            with self._cache_loc(rel_path, saltenv) as cache_dest:
-                dest2check = cache_dest
-
-        if dest2check and os.path.isfile(dest2check):
-            hash_local = self.hash_file(dest2check, saltenv)
-            hash_server = self.hash_file(path, saltenv)
-            if hash_local == hash_server:
-                log.info(
-                    'Fetching file from saltenv {0!r}, ** skipped ** '
-                    'latest already in cache {1!r}'.format(
-                        saltenv, path
-                    )
-                )
-                return dest2check
-
-        log.debug(
-            'Fetching file from saltenv {0!r}, ** attempting ** {1!r}'.format(
-                saltenv, path
-            )
-        )
-        d_tries = 0
-        path = self._check_proto(path)
-        load = {'path': path,
-                'saltenv': saltenv,
-                'cmd': self.__class__.serves + '_fileserver.serve_file'}
-        if gzip:
-            gzip = int(gzip)
-            load['gzip'] = gzip
-
-        fn_ = None
-        if dest:
-            destdir = os.path.dirname(dest)
-            if not os.path.isdir(destdir):
-                if makedirs:
-                    os.makedirs(destdir)
-                else:
-                    return False
-            fn_ = salt.utils.fopen(dest, 'wb+')
-        while True:
-            if not fn_:
-                load['loc'] = 0
-            else:
-                load['loc'] = fn_.tell()
-            try:
-                channel = salt.transport.Channel.factory(
-                        self.opts,
-                        auth=self.auth)
-                data = channel.send(load)
-            except SaltReqTimeoutError:
-                return ''
-
-            if not data['data']:
-                if not fn_ and data['dest']:
-                    # This is a 0 byte file on the master
-                    with self._cache_loc(data['dest'], saltenv) as cache_dest:
-                        dest = cache_dest
-                        with salt.utils.fopen(cache_dest, 'wb+') as ofile:
-                            ofile.write(data['data'])
-                if 'hsum' in data and d_tries < 3:
-                    # Master has prompted a file verification, if the
-                    # verification fails, re-download the file. Try 3 times
-                    d_tries += 1
-                    with salt.utils.fopen(dest, 'rb') as fp_:
-                        hsum = getattr(
-                            hashlib,
-                            data.get('hash_type', 'md5')
-                        )(fp_.read()).hexdigest()
-                        if hsum != data['hsum']:
-                            log.warn('Bad download of file {0}, attempt {1} '
-                                     'of 3'.format(path, d_tries))
-                            continue
-                break
-            if not fn_:
-                with self._cache_loc(data['dest'], saltenv) as cache_dest:
-                    dest = cache_dest
-                    # If a directory was formerly cached at this path, then
-                    # remove it to avoid a traceback trying to write the file
-                    if os.path.isdir(dest):
-                        salt.utils.rm_rf(dest)
-                    fn_ = salt.utils.fopen(dest, 'wb+')
-            if data.get('gzip', None):
-                data = salt.utils.gzip_util.uncompress(data['data'])
-            else:
-                data = data['data']
-            fn_.write(data)
-        if fn_:
-            fn_.close()
-            log.info(
-                'Fetching file from saltenv {0!r}, ** done ** {1!r}'.format(
-                    saltenv, path
-                )
-            )
-        return dest
 
     def file_list(self, saltenv='base', prefix='', env=None):
         '''
@@ -1186,7 +1082,33 @@ class StatesLocalClient(LocalClient):
 class PillarLocalClient(LocalClient):
     # TODO: proper opts handling such that Pillar doesn't need to do musical
     # chairs with file_roots and actual_file_roots and pillar_roots
-    pass
+    def __init__(self, opts, fileserver=None):
+        # get_file_client is kind of borked now
+        super(PillarLocalClient, self).__init__(self, opts)
+        self.fileserver = fileserver
+
+    def get_file(self,
+                 path,
+                 dest='',
+                 makedirs=False,
+                 saltenv='base',
+                 gzip=None,
+                 env=None):
+        '''
+        Copies a file from the local fileserver
+        '''
+
+        if env is not None:
+            salt.utils.warn_until(
+                'Boron',
+                'Passing a salt environment should be done using \'saltenv\' '
+                'not \'env\'. This functionality will be removed in Salt '
+                'Boron.'
+            )
+            # Backwards compatibility
+            saltenv = env
+
+        return dest
 
 class StatesRemoteClient(RemoteClient):
     serves = 'states'
