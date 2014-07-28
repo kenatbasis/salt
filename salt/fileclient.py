@@ -34,12 +34,16 @@ log = logging.getLogger(__name__)
 def get_file_client(opts):
     '''
     Read in the ``file_client`` option and return the correct type of file
-    server
+    server, remote vs local
+
+    Should only be used by StatesFileClients:
+
     '''
     return {
         'remote': RemoteClient,
         'local': LocalClient
     }.get(opts['file_client'], RemoteClient)(opts)
+
 
 
 class Client(object):
@@ -666,6 +670,7 @@ class RemoteClient(Client):
         dest is omitted, then the downloaded file will be placed in the minion
         cache
         '''
+<<<<<<< Updated upstream
         #--  Hash compare local copy with master and skip download
         #    if no diference found.
         dest2check = dest
@@ -750,6 +755,8 @@ class RemoteClient(Client):
             fn_.close()
             log.info('Fetching file ** done ** \'{0}\''.format(path))
         return dest
+=======
+>>>>>>> Stashed changes
 
     def file_list(self, env='base', prefix=''):
         '''
@@ -860,3 +867,46 @@ class RemoteClient(Client):
             return self._crypted_transfer(load)
         except SaltReqTimeoutError:
             return ''
+<<<<<<< Updated upstream
+=======
+
+class StatesLocalClient(LocalClient):
+    pass
+
+class PillarLocalClient(LocalClient):
+    # TODO: proper opts handling such that Pillar doesn't need to do musical
+    # chairs with file_roots and actual_file_roots and pillar_roots
+    def __init__(self, opts, fileserver=None):
+        # get_file_client is kind of borked now
+        super(PillarLocalClient, self).__init__(self, opts)
+        self.fileserver = fileserver
+
+    def get_file(self,
+                 path,
+                 dest='',
+                 makedirs=False,
+                 saltenv='base',
+                 gzip=None,
+                 env=None):
+        '''
+        Copies a file from the local fileserver
+        '''
+
+        if env is not None:
+            salt.utils.warn_until(
+                'Boron',
+                'Passing a salt environment should be done using \'saltenv\' '
+                'not \'env\'. This functionality will be removed in Salt '
+                'Boron.'
+            )
+            # Backwards compatibility
+            saltenv = env
+
+        return dest
+
+class StatesRemoteClient(RemoteClient):
+    serves = 'states'
+
+class PillarRemoteClient(RemoteClient):
+    serves = 'pillar'
+>>>>>>> Stashed changes
